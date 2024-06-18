@@ -1,0 +1,31 @@
+name: demo
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    permissions: 
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.ROLE_ARN }}
+          role-session-name: ${{ github.actor }}
+      - uses: alonch/actions-aws-backend-setup@main
+        with: 
+          instance: demo
+      - uses: alonch/actions-aws-function-clojurescript@main
+        id: function
+        with: 
+          name: actions-aws-function-clojurescript-sample
+          entrypoint-file: index.cljs
+          entrypoint-function: handler
+          artifacts: src
+          allow-public-access: true
+      - name: set summary
+        run: echo "function [URL](${{ steps.function.outputs.url }})" >> $GITHUB_STEP_SUMMARY
